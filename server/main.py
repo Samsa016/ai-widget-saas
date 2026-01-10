@@ -1,11 +1,18 @@
+import sys
+
+sys.stdout.reconfigure(encoding='utf-8')
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from scraper import scrape_website
 from ai_core import get_ai_response
 from pydantic import BaseModel
+from vector_db import VectorStore
+
+
 app = FastAPI()
 
-url_massive = []
+db = VectorStore()
 
 origins = [
     "http://localhost:5173",
@@ -28,8 +35,11 @@ async def adminChat(url: urlAdmin):
     if not url: return print("Ошибка! Ссылка не найдена")
     try:
         parse_data = await scrape_website(url.url)
-        url_massive.append(parse_data)
-        return {"status": "success"}
+        if parse_data:
+            db.add_document(parse_data, url.url)
+            return {"status": "success"}
+        else: return {"status": "error", "message": "Не удалось прочитать сайт"}
+
     except Exception as e:
         print(f"Ошибка при парсинге {e}")
 
@@ -45,16 +55,21 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             
             data = await websocket.receive_text()
-
             print(f"Получена сообщение: {data}")
 
-            if url_massive:
-                knowledge_base = "\n\n".join(url_massive)
-                ai_answer = await get_ai_response(data, knowledge_base)
-                await websocket.send_text(ai_answer)
+            if db.count() > 0:
+                search_data = db.searh(data)
+                if search_data:
+                    knowledge_base = "\n\n".join(search_data)
+                    ai_answer = await get_ai_response(data, knowledge_base)
+                    await websocket.send_text(ai_answer)
+                else:
+                    await websocket.send_text("Я посмотрел свои записи, но не нашел ответа на этот вопрос.")
             else:
                 await websocket.send_text("Я еще не обучен. Попросите админа добавить ссылку.")
+            
 
     except WebSocketDisconnect:
         print("Клиент отключился")
+    
 

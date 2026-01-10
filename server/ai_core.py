@@ -1,3 +1,7 @@
+import sys
+
+sys.stdout.reconfigure(encoding='utf-8')
+
 import openai
 import httpx
 
@@ -6,7 +10,7 @@ async def get_ai_response(user_message, context_text=""):
     http_client = httpx.AsyncClient(verify=False)
 
     client = openai.AsyncOpenAI(
-    api_key="Ваш АPI",
+    api_key="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",
     base_url="https://openrouter.ai/api/v1",
     http_client=http_client
     )
