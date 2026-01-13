@@ -47,6 +47,7 @@ async def adminChat(url: urlAdmin):
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    history = []
     
     await websocket.accept()
 
@@ -57,14 +58,23 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             print(f"Получена сообщение: {data}")
 
+            history.append({"role": "user", "content": data})
+
+            if len(history) > 6:
+                history = history[-6:]
+
+            context_text = ""
             if db.count() > 0:
-                search_data = db.searh(data)
+                search_data = db.search(data)
                 if search_data:
-                    knowledge_base = "\n\n".join(search_data)
-                    ai_answer = await get_ai_response(data, knowledge_base)
-                    await websocket.send_text(ai_answer)
-                else:
-                    await websocket.send_text("Я посмотрел свои записи, но не нашел ответа на этот вопрос.")
+                    context_text = "\n\n".join(search_data)
+
+                ai_answer = await get_ai_response(history, context_text)
+
+                await websocket.send_text(ai_answer)
+
+                history.append({"role": "assistant", "content": ai_answer})
+
             else:
                 await websocket.send_text("Я еще не обучен. Попросите админа добавить ссылку.")
             

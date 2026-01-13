@@ -42,7 +42,7 @@ class VectorStore:
 
             print(f"Сохранено {len(chunks)} чанков в базу данных.")
 
-    def searh(self, query, n_results=3):
+    def search(self, query, n_results=3):
 
         results = self.collection.query(
             query_texts=query,
