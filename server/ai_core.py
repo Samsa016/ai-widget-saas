@@ -4,7 +4,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 import openai
 import httpx
-
+import asyncio
 
 async def get_ai_response(history_message, context_text=""):
 
@@ -13,7 +13,7 @@ async def get_ai_response(history_message, context_text=""):
     http_client = httpx.AsyncClient(verify=False)
 
     client = openai.AsyncOpenAI(
-    api_key="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",
+    api_key="Ваш API",
     base_url="https://openrouter.ai/api/v1",
     http_client=http_client
     )
@@ -35,12 +35,21 @@ async def get_ai_response(history_message, context_text=""):
 
             temperature=0.7,
             max_tokens=1000,
-            stream=False
+            stream=True,
         )
 
-        answer = response.choices[0].message.content
-        return answer
+        async for chunk in response:
+            if chunk.choices[0].delta.content is not None:
+                answer = chunk.choices[0].delta.content
+
+                for char in answer: 
+                    yield char
+
+                    await asyncio.sleep(0.02)
+            
+        yield "Done"
     
     except Exception as e:
         print(f"Неизвестная ошибка: {e}")
-        return "Произошла ошибка."
+        yield "Произошла ошибка."
+        yield "Done"

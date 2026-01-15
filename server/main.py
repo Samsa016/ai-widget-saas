@@ -69,14 +69,24 @@ async def websocket_endpoint(websocket: WebSocket):
                 if search_data:
                     context_text = "\n\n".join(search_data)
 
-                ai_answer = await get_ai_response(history, context_text)
-
-                await websocket.send_text(ai_answer)
-
-                history.append({"role": "assistant", "content": ai_answer})
-
+            if db.count() == 0:
+                async def fake_generator():
+                    yield "Я еще не обучен. Попросите админа добавить ссылку."
+                ai_response = fake_generator()
             else:
-                await websocket.send_text("Я еще не обучен. Попросите админа добавить ссылку.")
+                ai_response = get_ai_response(history, context_text)
+            
+            full_answer = ""
+            async for ai_answer in ai_response:
+
+                if ai_answer == "Done":
+                    await websocket.send_text("Done")
+                else:
+                    full_answer += ai_answer
+                    await websocket.send_text(ai_answer)
+                
+
+            history.append({"role": "assistant", "content": full_answer})
             
 
     except WebSocketDisconnect:

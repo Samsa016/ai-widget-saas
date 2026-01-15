@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
-
+import { WidgetConfigProvider } from './widget_config'
 const WIDGET_ID = "smart-embed-widget-container"
 
 function initWidget() {
@@ -17,7 +17,9 @@ function initWidget() {
 
   root.render(
     <React.StrictMode>
-      <App />
+      <WidgetConfigProvider>
+        <App />
+      </WidgetConfigProvider>
     </React.StrictMode>
   )
 }
