@@ -42,7 +42,7 @@ export function WidgetConfigProvider({ children, projectId } : { children: React
             }
 
             try {
-                const response = await fetch(`http://localhost:8000/admin/${projectId}`);
+                const response = await fetch(`https://ai-widget-saas.onrender.com/admin/${projectId}`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data) {

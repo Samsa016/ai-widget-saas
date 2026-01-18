@@ -64,7 +64,7 @@ export function ChatWindow({ onClose }: ChatWindowProps) {
 
     useEffect(() => {
 
-            const socket = new WebSocket('ws://localhost:8000/ws?project_id=' + config.project_id)
+            const socket = new WebSocket('wss://ai-widget-saas.onrender.com/ws?project_id=' + config.project_id)
             socketRef.current = socket
 
             socket.onopen = () => {
