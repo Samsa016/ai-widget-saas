@@ -171,7 +171,13 @@ export function ChatWindow({ onClose }: ChatWindowProps) {
                                     className="w-1.5 h-1.5 bg-gray-400 rounded-full"
                                     variants={dotVariants}
                                     animate="animate"
-                                    transition={{ ...dotTransition, delay }} 
+                                    transition={{
+                                        duration: 0.6,
+                                        repeat: Infinity,
+                                        repeatType: "reverse",
+                                        ease: "easeInOut",
+                                        delay: delay
+                                    }} 
                                 />
                             ))}
                         </motion.div>
