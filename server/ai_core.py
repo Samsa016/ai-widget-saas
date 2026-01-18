@@ -13,7 +13,7 @@ async def get_ai_response(history_message, context_text=""):
     http_client = httpx.AsyncClient(verify=False)
 
     client = openai.AsyncOpenAI(
-    api_key="Ваш API",
+    api_key="-Ваш API ключ-",
     base_url="https://openrouter.ai/api/v1",
     http_client=http_client
     )

@@ -12,7 +12,7 @@ export function ChatWindow({ onClose }: ChatWindowProps) {
     const config = useWidgetConfig()
 
     const [messageList, setMessageList] = useState([
-        { id: 1, text: "Привет, чем могу помочь?", isUser: false }
+        { id: 1, text: config.welcomeMessage || "Привет, чем могу помочь?", isUser: false }
     ])
 
     const [messageUser, setMessageUser] = useState<string>('')
@@ -31,6 +31,18 @@ export function ChatWindow({ onClose }: ChatWindowProps) {
     }
 
     const lastMessageRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (config.welcomeMessage) {
+            setMessageList(prev => {
+                const newHistory = [...prev];
+                if (newHistory[0] && !newHistory[0].isUser) {
+                     newHistory[0].text = config.welcomeMessage;
+                }
+                return newHistory;
+            })
+        }
+    }, [config.welcomeMessage])
 
     const scrollToBottom = () => {
         lastMessageRef.current?.scrollIntoView({ behavior: "smooth"});
@@ -52,7 +64,7 @@ export function ChatWindow({ onClose }: ChatWindowProps) {
 
     useEffect(() => {
 
-            const socket = new WebSocket('ws://localhost:8000/ws')
+            const socket = new WebSocket('ws://localhost:8000/ws?project_id=' + config.project_id)
             socketRef.current = socket
 
             socket.onopen = () => {
@@ -98,7 +110,7 @@ export function ChatWindow({ onClose }: ChatWindowProps) {
 
         
 
-    }, [])
+    }, [config.project_id])
 
 
 

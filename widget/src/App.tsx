@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { ChatWindow } from './ChatWindow'
 import styles from './index.css?inline'
 import { MessageCircle, X } from 'lucide-react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { AdminPage } from './pages/AdminPage'
 import { motion, AnimatePresence } from "framer-motion"
+
 function UserChat() {
   const [isOpen, setIsOpen] = useState<boolean>(false)
 
@@ -51,13 +52,14 @@ function UserChat() {
 }
 
 export function App() {
+  const isUrlAdmin = window.location.search.includes("mode=admin")
   return (
-    <BrowserRouter>
+    <MemoryRouter initialEntries={isUrlAdmin ? ["/admin"] : ["/"]}>
       <Routes>
         <Route path="/" element={<UserChat />}></Route>
         <Route path="/admin" element={<AdminPage />}></Route>
       </Routes>
-    </BrowserRouter>
+    </MemoryRouter>
   )
 }
 

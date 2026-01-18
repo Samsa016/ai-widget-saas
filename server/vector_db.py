@@ -14,7 +14,7 @@ class VectorStore:
 
         self.collection = self.client.get_or_create_collection(name="scraped_sites")
         
-    def add_document(self, text, url, chunk_size=1000, overlay=100):
+    def add_document(self, text, url, project_id, chunk_size=1000, overlay=100):
 
         start = 0
         chunks = []
@@ -26,7 +26,7 @@ class VectorStore:
             end = start + chunk_size
             
             ids.append(f"{url}_{uuid.uuid4()}")
-            metadata.append({"url": url})
+            metadata.append({"url": url, "project_id": project_id})
             chunks.append(text[start:end])
 
             start += chunk_size - overlay
@@ -42,11 +42,12 @@ class VectorStore:
 
             print(f"Сохранено {len(chunks)} чанков в базу данных.")
 
-    def search(self, query, n_results=3):
+    def search(self, query, project_id, n_results=3):
 
         results = self.collection.query(
             query_texts=query,
-            n_results=n_results
+            n_results=n_results,
+            where={"project_id": project_id}
         )
 
         if results["documents"]:

@@ -1,52 +1,88 @@
 import sys
-
-sys.stdout.reconfigure(encoding='utf-8')
-
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from scraper import scrape_website
 from ai_core import get_ai_response
 from pydantic import BaseModel
 from vector_db import VectorStore
+from sqlalchemy.orm import Session
+import models
+from database import engine, get_db, SessionLocal
+from uuid import uuid4
 
+models.Base.metadata.create_all(bind=engine)
+
+sys.stdout.reconfigure(encoding='utf-8')
 
 app = FastAPI()
 
-db = VectorStore()
-
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+dbVector = VectorStore()
 
 class urlAdmin(BaseModel):
     url: str
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, 
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+class ProjectCreate(BaseModel):
+    url: str
+    bot_name: str = "AI Помощник"
+    primary_color: str = "#2563EB"
+    welcome_message: str = "Привет! Чем могу помочь?"
+
 @app.post("/admin")
-async def adminChat(url: urlAdmin):
-    if not url: return print("Ошибка! Ссылка не найдена")
+async def adminChat(user_widget_config: ProjectCreate, db: Session = Depends(get_db)):
+    ip_adress = "http://localhost:5173/"
+    new_id = str(uuid4())[:8]
+
+    if not user_widget_config.url: return {"status": "error", "message": "Ошибка! Ссылка не найдена"}
     try:
-        parse_data = await scrape_website(url.url)
+        parse_data = await scrape_website(user_widget_config.url)
         if parse_data:
-            db.add_document(parse_data, url.url)
-            return {"status": "success"}
-        else: return {"status": "error", "message": "Не удалось прочитать сайт"}
+            dbVector.add_document(parse_data, user_widget_config.url, project_id=new_id)
+        else: return {"status": "error", "message": "Ошибка при парсинге сайта"}
 
     except Exception as e:
         print(f"Ошибка при парсинге {e}")
 
-    
+    project = models.Project(
+        id=new_id,
+        url=user_widget_config.url,
+        bot_name=user_widget_config.bot_name,
+        primary_color=user_widget_config.primary_color,
+        welcome_message=user_widget_config.welcome_message
+    )
+    db.add(project)
+    db.commit()
+    db.refresh(project)
+
+    return {
+        "status": "success",
+        "script_code": f'<script src="{ip_adress}widget.js" data-id="{new_id}"></script>',
+        "id": new_id
+    }
+
+@app.get("/admin/{project_id}")
+async def get_project(project_id: str, db: Session = Depends(get_db)):
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Проект не найден")
+    return project
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket, project_id: str, db: Session = Depends(get_db)):
+
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        await websocket.send_text("Ошибка: Неверный ID проекта")
+        await websocket.close()
+        return
+
     history = []
     
     await websocket.accept()
@@ -64,12 +100,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 history = history[-6:]
 
             context_text = ""
-            if db.count() > 0:
-                search_data = db.search(data)
+            if dbVector.count() > 0:
+                search_data = dbVector.search(data, project_id=project_id)
                 if search_data:
                     context_text = "\n\n".join(search_data)
 
-            if db.count() == 0:
+            if dbVector.count() == 0:
                 async def fake_generator():
                     yield "Я еще не обучен. Попросите админа добавить ссылку."
                 ai_response = fake_generator()
