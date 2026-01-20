@@ -172,12 +172,12 @@ export function ChatWindow({ onClose }: ChatWindowProps) {
                                     variants={dotVariants}
                                     animate="animate"
                                     transition={{
-                                        duration: 0.6,
-                                        repeat: Infinity,
-                                        repeatType: "reverse",
-                                        ease: "easeInOut",
-                                        delay: delay
-                                    }} 
+                                            duration: 0.6,
+                                            repeat: Infinity,
+                                            repeatType: "reverse" as const,
+                                            ease: "easeInOut",
+                                            delay: delay
+                                        }}
                                 />
                             ))}
                         </motion.div>
