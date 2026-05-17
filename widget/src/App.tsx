@@ -52,11 +52,19 @@ function UserChat() {
 }
 
 export function App() {
-  const isUrlAdmin = window.location.search.includes("mode=admin")
+  const scriptTag = document.querySelector("script[data-id]")
+  const hasProjectId = !!scriptTag?.getAttribute("data-id")
+  const isAdminMode = window.location.search.includes("mode=admin")
+
+  // Embedded widget mode — script tag with data-id found on host page
+  if (hasProjectId) {
+    return <UserChat />
+  }
+
+  // Direct browser visit — always show admin panel
   return (
-    <MemoryRouter initialEntries={isUrlAdmin ? ["/admin"] : ["/"]}>
+    <MemoryRouter initialEntries={[isAdminMode ? "/admin" : "/admin"]}>
       <Routes>
-        <Route path="/" element={<UserChat />}></Route>
         <Route path="/admin" element={<AdminPage />}></Route>
       </Routes>
     </MemoryRouter>

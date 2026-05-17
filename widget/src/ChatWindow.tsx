@@ -52,52 +52,38 @@ export function ChatWindow({ onClose }: ChatWindowProps) {
     }
 
     useEffect(() => {
+        if (!config.project_id || config.project_id === "local_project_id") return
 
-            const socket = new WebSocket('wss://ai-widget-saas.onrender.com/ws?project_id=' + config.project_id)
-            socketRef.current = socket
+        const socket = new WebSocket('wss://ai-widget-saas.onrender.com/ws?project_id=' + config.project_id)
+        socketRef.current = socket
 
-            socket.onopen = () => {
-                console.log('Соединение установлено')
-            }
+        socket.onopen = () => {
+            console.log('Соединение установлено')
+        }
 
-            socket.onmessage = (message: MessageEvent) => {
-                const dataMessage = message.data
+        socket.onmessage = (message: MessageEvent) => {
+            const dataMessage = message.data
 
-                if (dataMessage === "Done") {
-                    console.log('Ответ от сервера завершён')
-                    return;
+            if (dataMessage === "Done") return
+
+            setIsThinking(false)
+
+            setMessageList(mg => {
+                const lastMessage = mg[mg.length - 1]
+                if (lastMessage?.isUser) {
+                    return [...mg, { id: Date.now(), text: dataMessage, isUser: false }]
                 }
+                return mg.map((m, i) =>
+                    i === mg.length - 1 ? { ...m, text: m.text + dataMessage } : m
+                )
+            })
+        }
 
-                setIsThinking(false)
+        socket.onclose = () => {
+            console.log('Соединение закрыто')
+        }
 
-                setMessageList(mg => {
-                    const newHistory = [...mg]
-                    const lastMessage = mg[mg.length - 1]
-
-                    if (lastMessage && lastMessage.isUser) {
-                        return [...mg, {id: Date.now(), text: dataMessage, isUser: false}]
-                    } else {
-                        const updatedLastMessage = {
-                            ...lastMessage,
-                            text: lastMessage.text + dataMessage
-                        }
-                        newHistory[newHistory.length - 1] = updatedLastMessage
-                        return newHistory
-                    }
-                })
-                
-            }
-
-            socket.onclose = () => {
-                console.log('Соединение закрыто')
-            }
-
-            return () => {
-                console.log('Закрываем сокет')
-                socket.close()
-            }
-
-        
+        return () => { socket.close() }
 
     }, [config.project_id])
 
