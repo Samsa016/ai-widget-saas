@@ -23,13 +23,6 @@ export function ChatWindow({ onClose }: ChatWindowProps) {
     animate: { y: -6 },
     }
 
-    const dotTransition = {
-        duration: 0.6,
-        repeat: Infinity,
-        repeatType: "reverse" as const,
-        ease: "easeInOut"
-    }
-
     const lastMessageRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -51,15 +44,11 @@ export function ChatWindow({ onClose }: ChatWindowProps) {
     useEffect(scrollToBottom, [messageList, isThinking]);
 
     const handleSend = () => {
-
-        if (!messageUser.trim()) return;
-        if (socketRef.current)
-            socketRef.current.send(messageUser)
-            setMessageList(mg => [...mg, { id: Date.now(), text: messageUser, isUser: true }])
-            setMessageUser('')
-            setIsThinking(true)
-
-
+        if (!messageUser.trim() || !socketRef.current) return;
+        socketRef.current.send(messageUser)
+        setMessageList(mg => [...mg, { id: Date.now(), text: messageUser, isUser: true }])
+        setMessageUser('')
+        setIsThinking(true)
     }
 
     useEffect(() => {

@@ -1,5 +1,5 @@
 import { useContext, createContext, useState, useEffect } from 'react';
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 export interface WidgetConfig {
     project_id: string;
